@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,6 +12,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,7 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import java.io.Serializable;
 import java.security.Principal;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -132,6 +136,26 @@ class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 }*/
 
+
+class ABCUser extends User implements Serializable {
+
+	private static final long serialVersionUID = 410L;
+	private String memberId;
+
+	public ABCUser(String username, String password, boolean enabled, boolean accountNonExpired, boolean credentialsNonExpired, boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities, String memberId) {
+		super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+		this.memberId = memberId;
+	}
+
+	public String getMemberId() {
+		return memberId;
+	}
+
+	public void setMemberId(String memberId) {
+		this.memberId = memberId;
+	}
+}
+
 @Service
 class AccountUserDetailsService implements UserDetailsService {
 
@@ -144,14 +168,16 @@ class AccountUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		String memberId = "IamAmemberIdforlookupandStuff";
 		return this.accountRepository.findByUsername(username)
-				.map(account -> new User(account.getUsername(),
+				.map(account -> new ABCUser(account.getUsername(),
 						account.getPassword(),
 						account.isActive(),
 						account.isActive(),
 						account.isActive(),
 						account.isActive(),
-						AuthorityUtils.createAuthorityList("ROLE_ADMIN","ROLE_USER")))
+						AuthorityUtils.createAuthorityList("ROLE_ADMIN","ROLE_USER"),
+						memberId))
 				.orElseThrow(() -> new UsernameNotFoundException("OH NOES!"));
 	}
 }
